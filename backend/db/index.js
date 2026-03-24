@@ -1,19 +1,26 @@
 const { Pool } = require("pg");
 require("dotenv").config();
 
-if (!process.env.DB_PASSWORD) {
+if (!process.env.DATABASE_URL && !process.env.DB_PASSWORD) {
   throw new Error(
-    "Missing DB_PASSWORD in backend/.env. Set your PostgreSQL password and restart the backend."
+    "Missing database configuration. Set DATABASE_URL or the DB_* variables and restart the backend."
   );
 }
 
-const pool = new Pool({
-  host: process.env.DB_HOST || "localhost",
-  port: process.env.DB_PORT || 5432,
-  database: process.env.DB_NAME || "insurance_portal",
-  user: process.env.DB_USER || "postgres",
-  password: process.env.DB_PASSWORD,
-});
+const pool = process.env.DATABASE_URL
+  ? new Pool({
+      connectionString: process.env.DATABASE_URL,
+      ssl: process.env.DATABASE_URL.includes("render.com")
+        ? { rejectUnauthorized: false }
+        : undefined,
+    })
+  : new Pool({
+      host: process.env.DB_HOST || "localhost",
+      port: process.env.DB_PORT || 5432,
+      database: process.env.DB_NAME || "insurance_portal",
+      user: process.env.DB_USER || "postgres",
+      password: process.env.DB_PASSWORD,
+    });
 
 async function verifyDatabaseConnection() {
   const client = await pool.connect();
